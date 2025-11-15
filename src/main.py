@@ -19,6 +19,7 @@ app = typer.Typer(rich_markup_mode="rich")
 @app.command()
 def analyze(
     image_path: Path,
+    force: bool = typer.Option(False, "--force", "-f", help="Force the renaming even if the filename seems already in the desired format"),
     rename: bool = typer.Option(False, "--rename", "-r", help="Rename the file to the suggested name with keywords and timestamp"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Print detailed information about processing steps"),
 ):
@@ -40,9 +41,9 @@ def analyze(
         print(f"[VERBOSE] Keywords: {result.get('keywords')}", file=sys.stderr)
 
     # perform rename if requested
-    if rename:
+    if force or rename:
         # if the existing filename already matches the desired pattern, return an error
-        if is_filename_in_desired_format(image_path.name):
+        if not force and is_filename_in_desired_format(image_path.name):
             result["rename_error"] = "filename already matches the target format; not compatible for renaming"
             output = json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) if verbose else json.dumps(result, ensure_ascii=False)
             print(output)

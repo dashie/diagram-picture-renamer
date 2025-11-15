@@ -9,9 +9,9 @@ from src.llm_integration import analyze_with_llm
 
 def _slugify(text: str) -> str:
     text = text.strip()
-    text = re.sub(r"[^0-9A-Za-z_-]+", "_", text)
-    text = re.sub(r"__+", "_", text)
-    return text.strip("_")
+    text = re.sub(r"[^0-9A-Za-z_-]+", " ", text)
+    text = re.sub(r"  +", " ", text)
+    return text.strip()
 
 
 def _color_to_name(rgb):
@@ -57,7 +57,7 @@ def generate_name_and_keywords(image_path: str, verbose: bool = False) -> Dict[s
         title_base = p.stem
 
     timestamp = datetime.now().strftime("%Y%m%d")
-    title = f"{_slugify(title_base)}_{timestamp}"
+    title = f"{title_base} {timestamp}"
 
     # keywords: tokens from OCR and color names and filename tokens
     keywords = set()
@@ -68,7 +68,10 @@ def generate_name_and_keywords(image_path: str, verbose: bool = False) -> Dict[s
         keywords.add(c)
     keywords.add(p.suffix.replace('.', ''))
 
-    return {"title": title, "keywords": sorted(keywords), "filename": p.name}
+    keywords_str = ", ".join(sorted(keywords))
+    # Inserisci le keyword nel nome del file, separandole con virgola e spazio
+    filename_with_keywords = f"{title_base} [{keywords_str}] {timestamp}{p.suffix}"
+    return {"title": title, "keywords": keywords_str, "filename": filename_with_keywords}
 
 
 def build_final_filename(suggested_title: str, keywords: list, original_suffix: str) -> str:
@@ -100,7 +103,7 @@ def build_final_filename(suggested_title: str, keywords: list, original_suffix: 
         if len(kw_list) >= 5:
             break
 
-    keywords_part = ",".join(kw_list) if kw_list else ""
+    keywords_part = ", ".join(kw_list) if kw_list else ""
 
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 

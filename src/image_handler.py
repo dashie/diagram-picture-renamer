@@ -24,14 +24,39 @@ def resize_image(img: Image.Image, max_width: int = 2000) -> Image.Image:
 
 
 def extract_text_with_ocr(img: Image.Image, verbose: bool = False) -> str:
+    """
+    Extract text from an image using pytesseract OCR, with optional pre-processing to improve results on low-contrast text.
+    Args:
+        img: PIL.Image.Image
+        verbose: bool
+        preprocess: bool (default True) - apply grayscale, contrast, and binarization
+    Returns:
+        str: cleaned OCR text
+    """
+    preprocess = True  # set True by default, can be parameterized if needed
     if not _HAS_TESSERACT:
         return ""
     try:
-        ocr_text = pytesseract.image_to_string(img)
+        import re
+        from PIL import ImageEnhance, ImageOps
+        proc_img = img
+        if preprocess:
+            # 1. Convert to grayscale
+            proc_img = proc_img.convert("L")
+            # 2. Enhance contrast
+            enhancer = ImageEnhance.Contrast(proc_img)
+            proc_img = enhancer.enhance(2.0)  # 2.0 is a good default, can be tuned
+            # 3. Adaptive threshold (binarization)
+            # Use PIL's point method for simple thresholding
+            # Or use ImageOps.autocontrast for further normalization
+            proc_img = ImageOps.autocontrast(proc_img)
+            # Try both adaptive and fixed threshold
+            threshold = 180  # can be tuned
+            proc_img = proc_img.point(lambda x: 255 if x > threshold else 0, mode='1')
+        ocr_text = pytesseract.image_to_string(proc_img)
         ocr_text = ocr_text.strip()
 
         # Clean OCR text: process each line, keep only alphanumeric characters, remove empty lines
-        import re
         lines = ocr_text.split('\n')
         cleaned_lines = []
         for line in lines:
@@ -41,14 +66,12 @@ def extract_text_with_ocr(img: Image.Image, verbose: bool = False) -> str:
             # Only add non-empty lines
             if cleaned_line and len(cleaned_line) > 1:
                 cleaned_lines.append(f"- {cleaned_line}")
-        
         clean_ocr_text = "\n".join(cleaned_lines) if cleaned_lines else "No text detected"
         if verbose:
             import sys
             print(f"[VERBOSE] OCR text extracted:\n{ocr_text}", file=sys.stderr)
             print(f"[VERBOSE] OCR text cleaned:\n{clean_ocr_text}", file=sys.stderr)
         return clean_ocr_text
-
     except Exception:
         return ""
 
