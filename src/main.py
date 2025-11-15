@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 import json
 import typer
+import sys
 
 
 from src.naming_engine import generate_name_and_keywords, build_final_filename, is_filename_in_desired_format
@@ -19,6 +20,7 @@ app = typer.Typer(rich_markup_mode="rich")
 def analyze(
     image_path: Path,
     rename: bool = typer.Option(False, "--rename", "-r", help="Rename the file to the suggested name with keywords and timestamp"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Print detailed information about processing steps"),
 ):
     """Analyze an image and optionally rename the file using the suggested name.
 
@@ -28,7 +30,14 @@ def analyze(
     if not image_path.exists():
         raise typer.Exit(code=2)
 
-    result = generate_name_and_keywords(str(image_path))
+    if verbose:
+        print(f"[VERBOSE] Input file: {image_path.absolute()}", file=sys.stderr)
+
+    result = generate_name_and_keywords(str(image_path), verbose=verbose)
+
+    if verbose:
+        print(f"[VERBOSE] Suggested title: {result.get('title')}", file=sys.stderr)
+        print(f"[VERBOSE] Keywords: {result.get('keywords')}", file=sys.stderr)
 
     # perform rename if requested
     if rename:

@@ -30,17 +30,17 @@ def _color_to_name(rgb):
     return "gray"
 
 
-def generate_name_and_keywords(image_path: str) -> Dict[str, Any]:
+def generate_name_and_keywords(image_path: str, verbose: bool = False) -> Dict[str, Any]:
     p = Path(image_path)
     img = load_image(image_path)
     img = resize_image(img)
 
-    ocr_text = extract_text_with_ocr(img)
-    colors = get_dominant_colors(img, num_colors=3)
+    ocr_text = extract_text_with_ocr(img, verbose=verbose)
+    colors = get_dominant_colors(img, num_colors=3, verbose=verbose)
     color_names = [_color_to_name(c) for c in colors]
 
     # try LLM first
-    llm = analyze_with_llm(image_path, ocr_text, color_names)
+    llm = analyze_with_llm(image_path, ocr_text, color_names, verbose=verbose)
     if llm and isinstance(llm, dict) and llm.get("title"):
         return {"title": llm.get("title"), "keywords": llm.get("keywords", []), "filename": p.name}
 

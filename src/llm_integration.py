@@ -8,7 +8,7 @@ except Exception:
     openai = None
     _HAS_OPENAI = False
 
-def analyze_with_llm(image_path: str, ocr_text: str, colors) -> Optional[Dict[str, Any]]:
+def analyze_with_llm(image_path: str, ocr_text: str, colors, verbose: bool = False) -> Optional[Dict[str, Any]]:
     """Optional: call OpenAI (if configured) to get title+keywords.
 
     Returns dict {"title": str, "keywords": [str]} or None if not available.
@@ -21,19 +21,6 @@ def analyze_with_llm(image_path: str, ocr_text: str, colors) -> Optional[Dict[st
         # If OpenAI is not configured, fall back to Ollama when available
         pass
 
-    # Clean OCR text: process each line, keep only alphanumeric characters, remove empty lines
-    import re
-    lines = ocr_text.split('\n')
-    cleaned_lines = []
-    for line in lines:
-        # Keep only alphanumeric characters and common punctuation, trim whitespace
-        cleaned_line = re.sub(r'[^a-zA-Z0-9\s\.,;:\-]', '', line).strip()
-        # Only add non-empty lines
-        if cleaned_line and len(cleaned_line) > 1:
-            cleaned_lines.append(f"- {cleaned_line}")
-    
-    clean_ocr_text = "\n".join(cleaned_lines) if cleaned_lines else "No text detected"
-
     system_prompt = (
         "You are an assistant that reads information from the image to suggest a proper filename.\n"
         "The user will provide OCR text extracted from the image and a list of dominant colors.\n"
@@ -45,13 +32,22 @@ def analyze_with_llm(image_path: str, ocr_text: str, colors) -> Optional[Dict[st
 
     prompt = (
         "Return JSON object for these inputs:\n\n"
-        f"OCR_TEXT:\n{clean_ocr_text}\n\n"
+        f"OCR_TEXT:\n{ocr_text}\n\n"
         f"COLORS:{colors}\n\n"
     )
+
+    if verbose:
+        import sys
+        print(f"[VERBOSE] LLM system_prompt:\n{system_prompt}", file=sys.stderr)
+        print(f"[VERBOSE] LLM user_prompt:\n{prompt}", file=sys.stderr)
 
     # Prefer Ollama (local) if configured and openai library is available
     if ollama_model and _HAS_OPENAI:
         try:
+            if verbose:
+                import sys
+                print(f"[VERBOSE] Using Ollama service at {ollama_host} with model {ollama_model}", file=sys.stderr)
+            
             # Point the OpenAI client at the Ollama host (OpenAI-compatible)
             client = openai.OpenAI(
                 api_key = os.environ.get("OLLAMA_API_KEY", ""),
@@ -87,7 +83,11 @@ def analyze_with_llm(image_path: str, ocr_text: str, colors) -> Optional[Dict[st
             if content:
                 import json
                 try:
-                    return json.loads(content)
+                    result = json.loads(content)
+                    if verbose:
+                        import sys
+                        print(f"[VERBOSE] LLM JSON result: {json.dumps(result, ensure_ascii=False)}", file=sys.stderr)
+                    return result
                 except Exception:
                     return None
         except Exception as e:
@@ -97,6 +97,10 @@ def analyze_with_llm(image_path: str, ocr_text: str, colors) -> Optional[Dict[st
     # Fall back to OpenAI if available
     try:
         if api_key and model and _HAS_OPENAI:
+            if verbose:
+                import sys
+                print(f"[VERBOSE] Using OpenAI service with model {model}", file=sys.stderr)
+            
             openai.api_key = api_key
             resp = openai.ChatCompletion.create(
                 model=model,
@@ -107,7 +111,11 @@ def analyze_with_llm(image_path: str, ocr_text: str, colors) -> Optional[Dict[st
             # attempt to parse JSON from content
             import json
             try:
-                return json.loads(content)
+                result = json.loads(content)
+                if verbose:
+                    import sys
+                    print(f"[VERBOSE] LLM JSON result: {json.dumps(result, ensure_ascii=False)}", file=sys.stderr)
+                return result
             except Exception:
                 # best-effort: look for title: and keywords:
                 return None
