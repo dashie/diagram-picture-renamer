@@ -34,12 +34,19 @@ def analyze_with_llm(image_path: str, ocr_text: str, colors) -> Optional[Dict[st
     
     clean_ocr_text = "\n".join(cleaned_lines) if cleaned_lines else "No text detected"
 
+    system_prompt = (
+        "You are an assistant that reads information from the image to suggest a proper filename.\n"
+        "The user will provide OCR text extracted from the image and a list of dominant colors.\n"
+        "You must reply with valid JSON only. Do not include any explanatory text.\n"
+        "Return a JSON object with this structure:\n"
+        "{\n  \"title\": \"concise title here\",\n  \"keywords\": [\"keyword1\", \"keyword2\", ...]\n}\n"
+        "Identify the keywords relevant to the content that represent subjects of study, and select only the 5 most relevant keywords if possible."
+    )
+
     prompt = (
-        "You are an assistant that reads information from the image and returns only JSON message.\n\n"
+        "Return JSON object for these inputs:\n\n"
         f"OCR_TEXT:\n{clean_ocr_text}\n\n"
         f"COLORS:{colors}\n\n"
-        "Return JSON object with this structure:\n" \
-        "{\n  \"title\": \"concise title here\",\n  \"keywords\": [\"keyword1\", \"keyword2\", ...]\n}\n"
     )
 
     # Prefer Ollama (local) if configured and openai library is available
@@ -53,7 +60,7 @@ def analyze_with_llm(image_path: str, ocr_text: str, colors) -> Optional[Dict[st
 
             # Enforce JSON-only output with a system message and request format
             messages = [
-                {"role": "system", "content": "You must reply with valid JSON only. Do not include any explanatory text."},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt},
             ]
             resp = client.chat.completions.create(

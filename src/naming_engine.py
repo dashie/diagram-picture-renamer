@@ -42,7 +42,7 @@ def generate_name_and_keywords(image_path: str) -> Dict[str, Any]:
     # try LLM first
     llm = analyze_with_llm(image_path, ocr_text, color_names)
     if llm and isinstance(llm, dict) and llm.get("title"):
-        return {"title": llm.get("title"), "keywords": llm.get("keywords", [])}
+        return {"title": llm.get("title"), "keywords": llm.get("keywords", []), "filename": p.name}
 
     # fallback heuristics
     title_base = None
@@ -68,4 +68,4 @@ def generate_name_and_keywords(image_path: str) -> Dict[str, Any]:
         keywords.add(c)
     keywords.add(p.suffix.replace('.', ''))
 
-    return {"title": title, "keywords": sorted(keywords)}
+    return {"title": title, "keywords": sorted(keywords), "filename": p.name}
