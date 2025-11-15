@@ -38,6 +38,11 @@
 
 ## Project-Specific Conventions
 
+### Language & Style
+- Follow PEP 8 for Python code style
+- Use type hints for all functions and methods
+- Use always and only english for code comments, documentation, and commit messages
+
 ### Naming Output Format
 When implementing the naming engine:
 - Use structured naming: `[DiagramType]_[MainPurpose]_[Timestamp]` (example: `Architecture_ServiceMesh_20251115`)
@@ -48,6 +53,8 @@ When implementing the naming engine:
 - Support: PNG, JPG, SVG (if rasterized), WebP
 - Resize large images to ~2000px max width (balance quality vs. token usage)
 - Preserve original images; store results in separate output directory
+- Analyze imege using SigCLIP or similar models for diagram understanding
+- Use tesseract OCR for text extraction if diagrams contain significant text
 
 ### LLM Integration Points
 - **Prompt engineering**: Keep prompts focused on extracting diagram type, purpose, and key elements

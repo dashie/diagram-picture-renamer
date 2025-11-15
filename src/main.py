@@ -10,7 +10,7 @@ app = typer.Typer()
 
 @app.command()
 def analyze(image_path: Path):
-    """Analizza un'immagine e stampa title+keywords in JSON."""
+    """Analyze an image and generate a name and keywords for it."""
     if not image_path.exists():
         raise typer.Exit(code=2)
 
