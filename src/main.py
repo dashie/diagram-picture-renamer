@@ -44,7 +44,8 @@ def analyze(
         # if the existing filename already matches the desired pattern, return an error
         if is_filename_in_desired_format(image_path.name):
             result["rename_error"] = "filename already matches the target format; not compatible for renaming"
-            print(json.dumps(result, ensure_ascii=False))
+            output = json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) if verbose else json.dumps(result, ensure_ascii=False)
+            print(output)
             raise typer.Exit(code=4)
 
         try:
@@ -67,10 +68,12 @@ def analyze(
         except Exception as e:
             # include error info in JSON and exit non-zero
             result["rename_error"] = str(e)
-            print(json.dumps(result, ensure_ascii=False))
+            output = json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) if verbose else json.dumps(result, ensure_ascii=False)
+            print(output)
             raise typer.Exit(code=3)
 
-    print(json.dumps(result, ensure_ascii=False))
+    output = json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) if verbose else json.dumps(result, ensure_ascii=False)
+    print(output)
 
 
 def main():
