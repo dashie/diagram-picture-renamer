@@ -69,3 +69,64 @@ def generate_name_and_keywords(image_path: str) -> Dict[str, Any]:
     keywords.add(p.suffix.replace('.', ''))
 
     return {"title": title, "keywords": sorted(keywords), "filename": p.name}
+
+
+def build_final_filename(suggested_title: str, keywords: list, original_suffix: str) -> str:
+    """Build a safe filename using the suggested title, keywords in square brackets,
+    and a trailing timestamp separated by ' - '. Keeps the original file extension.
+
+    Example: My_Diagram [service,mesh] - 20251115123045.png
+    """
+    # ensure inputs
+    if not suggested_title:
+        suggested_title = "image"
+
+    # slugify title and keywords to keep filename-safe
+    safe_title = _slugify(suggested_title)
+
+    # sanitize keywords, preserve order, dedupe and take at most 5
+    kw_list = []
+    seen = set()
+    for k in (keywords or []):
+        if not isinstance(k, str):
+            k = str(k)
+        s = _slugify(k)
+        if not s:
+            continue
+        if s in seen:
+            continue
+        seen.add(s)
+        kw_list.append(s)
+        if len(kw_list) >= 5:
+            break
+
+    keywords_part = ",".join(kw_list) if kw_list else ""
+
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+
+    if keywords_part:
+        name_core = f"{safe_title} [{keywords_part}] - {timestamp}"
+    else:
+        name_core = f"{safe_title} - {timestamp}"
+
+    # ensure extension begins with dot
+    if original_suffix and not original_suffix.startswith('.'):
+        original_suffix = f'.{original_suffix}'
+
+    return f"{name_core}{original_suffix}"
+
+
+def is_filename_in_desired_format(filename: str) -> bool:
+    """Return True if the given filename already matches the desired pattern:
+    <safe_title> [kw1,kw2] - YYYYMMDDHHMMSS.ext  OR  <safe_title> - YYYYMMDDHHMMSS.ext
+
+    This uses a permissive regex to detect the pattern; it's intentionally lenient
+    about the allowed characters in the title and keywords but requires the
+    timestamp to be 14 digits (YYYYMMDDHHMMSS) and an extension.
+    """
+    name = Path(filename).name
+    # regex: anything, optional ' [..keywords..]', space-dash-space, 14 digits, dot ext
+    import re as _re
+
+    pattern = r"^.+?(?: \[[^\]]+\])? - \d{14}\.[^\.]+$"
+    return bool(_re.match(pattern, name))
