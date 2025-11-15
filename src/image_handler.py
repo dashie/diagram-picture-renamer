@@ -28,6 +28,7 @@ def extract_text_with_ocr(img: Image.Image, verbose: bool = False) -> str:
         return ""
     try:
         ocr_text = pytesseract.image_to_string(img)
+        ocr_text = ocr_text.strip()
 
         # Clean OCR text: process each line, keep only alphanumeric characters, remove empty lines
         import re
@@ -36,6 +37,7 @@ def extract_text_with_ocr(img: Image.Image, verbose: bool = False) -> str:
         for line in lines:
             # Keep only alphanumeric characters and common punctuation, trim whitespace
             cleaned_line = re.sub(r'[^a-zA-Z0-9\s\.,;:\-]', '', line).strip()
+            cleaned_line = re.sub(r'\s+', ' ', cleaned_line)
             # Only add non-empty lines
             if cleaned_line and len(cleaned_line) > 1:
                 cleaned_lines.append(f"- {cleaned_line}")
@@ -43,7 +45,8 @@ def extract_text_with_ocr(img: Image.Image, verbose: bool = False) -> str:
         clean_ocr_text = "\n".join(cleaned_lines) if cleaned_lines else "No text detected"
         if verbose:
             import sys
-            print(f"[VERBOSE] OCR text extracted:\n{clean_ocr_text}", file=sys.stderr)
+            print(f"[VERBOSE] OCR text extracted:\n{ocr_text}", file=sys.stderr)
+            print(f"[VERBOSE] OCR text cleaned:\n{clean_ocr_text}", file=sys.stderr)
         return clean_ocr_text
 
     except Exception:
