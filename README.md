@@ -1,54 +1,54 @@
-# diagram-picture-renamer — prima versione
+# diagram-picture-renamer — first version
 
-Questo repository contiene una prima versione di uno strumento CLI che analizza un'immagine e restituisce un titolo e parole chiave (keywords) associate.
+This repository contains an initial version of a CLI tool that analyzes an image and returns a title and associated keywords.
 
-Principali punti:
-- Linguaggio: Python
+Main points:
+- Language: Python
 - CLI: `typer`
-- Analisi immagine: Pillow + (opzionale) OCR con `pytesseract`
-- Integrazione LLM: opzionale via OpenAI (se configurato)
+- Image analysis: Pillow + (optional) OCR with `pytesseract`
+- LLM integration: optional via OpenAI (if configured)
 
-Installazione (macOS, zsh):
+Installation (macOS, zsh):
 
-Questo progetto usa `uv` per gestire l'ambiente e sincronizzare le dipendenze.
+This project uses `uv` to manage the environment and sync dependencies.
 
-Prerequisiti:
+Prerequisites:
 - Python 3.10+
-- `uv` installato (ad esempio via pip o pipx)
+- `uv` installed (for example via pip or pipx)
 
-Installazione dipendenze:
+Dependency installation:
 
 ```bash
-# installa uv (se non è già disponibile)
+# install uv (if not already available)
 pip install uv
 
-# dalla root del repository: sincronizza l'ambiente e installa le dipendenze
+# from the repository root: sync the environment and install dependencies
 uv sync
 ```
 
-Nota: `uv sync` crea/sincronizza l'ambiente di lavoro e installerà i pacchetti elencati in `requirements.txt`.
-Dopo `uv sync` puoi attivare l'ambiente creato (se presente) o eseguire direttamente il comando Python desiderato usando l'ambiente; ad esempio, per usare il CLI come prima:
+Note: `uv sync` creates/syncs the working environment and will install the packages listed in `requirements.txt`.
+After `uv sync` you can activate the created environment (if present) or run the desired Python command directly using the environment; for example, to use the CLI:
 
 ```bash
-# se uv ha creato una directory .venv puoi attivarla così (opzionale)
+# if uv created a .venv directory you can activate it like this (optional)
 source .venv/bin/activate
 python -m src.main analyze path/to/image.png
 ```
 
 
-Uso:
+Usage:
 
 ```bash
 python -m src.main analyze path/to/image.png
 ```
 
-Esempio di output (JSON su stdout):
+Example output (JSON on stdout):
 
 {
   "title": "Architecture_ServiceMesh_20251115",
   "keywords": ["service", "mesh", "diagram", "blue", "network"]
 }
 
-Note:
-- Se `OPENAI_API_KEY` è impostata e `OPENAI_MODEL` definito, il tool proverà a usare l'LLM per migliorare titolo e keyword.
-- In assenza di LLM, si usa una logica locale basata su OCR (se disponibile) e colori dominanti.
+Notes:
+- If `OPENAI_API_KEY` is set and `OPENAI_MODEL` is defined, the tool will try to use the LLM to improve title and keywords.
+- In the absence of an LLM, a local logic based on OCR (if available) and dominant colors is used.

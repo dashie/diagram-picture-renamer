@@ -20,10 +20,10 @@ def analyze_with_llm(image_path: str, ocr_text: str, colors) -> Optional[Dict[st
         return None
 
     prompt = (
-        "Sei un assistente che legge informazioni sull'immagine. "
+        "You are an assistant that reads information from the image. "
         f"OCR_TEXT:{ocr_text}\n"
         f"COLORS:{colors}\n"
-        "Genera un titolo sintetico e 5 keywords separate da virgola in JSON con chiavi title e keywords (array)."
+        "Generate a concise title and 5 comma-separated keywords in JSON with keys title and keywords (array)."
     )
 
     try:
