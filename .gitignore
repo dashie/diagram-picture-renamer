@@ -1,0 +1,31 @@
+# Byte-compiled / distribution / packaging
+__pycache__/
+*.py[cod]
+*.so
+build/
+dist/
+*.egg-info/
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# macOS
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+
+# Logs and runtime
+*.log
+
+# Secrets
+.env
+
+# Ignore all contents of tmp and out, but keep the .gitkeep files so the dirs are present in the repo
+/tmp/*
+!/tmp/.gitkeep
+/out/*
+!/out/.gitkeep

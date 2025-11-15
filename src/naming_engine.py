@@ -1,0 +1,71 @@
+from pathlib import Path
+from datetime import datetime
+from typing import Dict, Any
+import re
+
+from src.image_handler import load_image, resize_image, extract_text_with_ocr, get_dominant_colors
+from src.llm_integration import analyze_with_llm
+
+
+def _slugify(text: str) -> str:
+    text = text.strip()
+    text = re.sub(r"[^0-9A-Za-z_-]+", "_", text)
+    text = re.sub(r"__+", "_", text)
+    return text.strip("_")
+
+
+def _color_to_name(rgb):
+    # naive mapping by brightness/hue groups
+    r, g, b = rgb
+    if r > 200 and g > 200 and b > 200:
+        return "white"
+    if r < 50 and g < 50 and b < 50:
+        return "black"
+    if r > g and r > b:
+        return "red"
+    if g > r and g > b:
+        return "green"
+    if b > r and b > g:
+        return "blue"
+    return "gray"
+
+
+def generate_name_and_keywords(image_path: str) -> Dict[str, Any]:
+    p = Path(image_path)
+    img = load_image(image_path)
+    img = resize_image(img)
+
+    ocr_text = extract_text_with_ocr(img)
+    colors = get_dominant_colors(img, num_colors=3)
+    color_names = [_color_to_name(c) for c in colors]
+
+    # try LLM first
+    llm = analyze_with_llm(image_path, ocr_text, color_names)
+    if llm and isinstance(llm, dict) and llm.get("title"):
+        return {"title": llm.get("title"), "keywords": llm.get("keywords", [])}
+
+    # fallback heuristics
+    title_base = None
+    if ocr_text and ocr_text.strip():
+        # take first long line
+        lines = [l.strip() for l in ocr_text.splitlines() if l.strip()]
+        if lines:
+            title_base = lines[0][:80]
+
+    if not title_base:
+        # use filename without extension
+        title_base = p.stem
+
+    timestamp = datetime.now().strftime("%Y%m%d")
+    title = f"{_slugify(title_base)}_{timestamp}"
+
+    # keywords: tokens from OCR and color names and filename tokens
+    keywords = set()
+    for tok in re.split(r"\W+", title_base):
+        if len(tok) > 2:
+            keywords.add(tok.lower())
+    for c in color_names:
+        keywords.add(c)
+    keywords.add(p.suffix.replace('.', ''))
+
+    return {"title": title, "keywords": sorted(keywords)}
