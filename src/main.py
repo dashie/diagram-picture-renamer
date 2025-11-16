@@ -21,12 +21,17 @@ def analyze(
     image_path: Path,
     force: bool = typer.Option(False, "--force", "-f", help="Force the renaming even if the filename seems already in the desired format"),
     rename: bool = typer.Option(False, "--rename", "-r", help="Rename the file to the suggested name with keywords and timestamp"),
+    save_preprocessed_img: bool = typer.Option(False, "--save-preprocessed-img", "-s", help="Save the preprocessed image (as seen by OCR) to the current working directory"),
+    force_tesseract: bool = typer.Option(False, "--tesseract", "-t", help="Use Tesseract OCR instead of Apple Vision"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Print detailed information about processing steps"),
 ):
     """Analyze an image and optionally rename the file using the suggested name.
 
     When `--rename` is passed, the tool will rename the original file in-place.
     The new filename will be: <suggested_title> [kw1,kw2] - <timestamp><ext>
+
+    When `--save-preprocessed` is passed, the preprocessed image (as transformed for OCR)
+    will be saved to the current working directory.
     """
     if not image_path.exists():
         raise typer.Exit(code=2)
@@ -34,7 +39,13 @@ def analyze(
     if verbose:
         print(f"[VERBOSE] Input file: {image_path.absolute()}", file=sys.stderr)
 
-    result = generate_name_and_keywords(str(image_path), verbose=verbose)
+    # Generate suggested name and keywords
+    result = generate_name_and_keywords(
+        str(image_path),
+        force_tesseract=force_tesseract,
+        verbose=verbose,
+        save_preprocessed_img=save_preprocessed_img
+    )
 
     if verbose:
         print(f"[VERBOSE] Suggested title: {result.get('title')}", file=sys.stderr)

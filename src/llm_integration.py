@@ -8,7 +8,7 @@ except Exception:
     openai = None
     _HAS_OPENAI = False
 
-def analyze_with_llm(image_path: str, ocr_text: str, colors, verbose: bool = False) -> Optional[Dict[str, Any]]:
+def analyze_with_llm(image_path: str, ocr_text: str, verbose: bool = False) -> Optional[Dict[str, Any]]:
     """Optional: call OpenAI (if configured) to get title+keywords.
 
     Returns dict {"title": str, "keywords": [str]} or None if not available.
@@ -23,7 +23,7 @@ def analyze_with_llm(image_path: str, ocr_text: str, colors, verbose: bool = Fal
 
     system_prompt = (
         "You are an assistant that reads information from the image to suggest a proper filename.\n"
-        "The user will provide OCR text extracted from the image and a list of dominant colors.\n"
+        "The user will provide OCR text extracted from the image.\n"
         "You must reply with valid JSON only. Do not include any explanatory text.\n"
         "Return a JSON object with this structure:\n"
         "{\n  \"title\": \"concise title here\",\n  \"keywords\": [\"keyword1\", \"keyword2\", ...]\n}\n"
@@ -33,7 +33,6 @@ def analyze_with_llm(image_path: str, ocr_text: str, colors, verbose: bool = Fal
     prompt = (
         "Return JSON object for these inputs:\n\n"
         f"OCR_TEXT:\n{ocr_text}\n\n"
-        f"COLORS:{colors}\n\n"
     )
 
     if verbose:

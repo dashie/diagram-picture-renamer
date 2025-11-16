@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Dict, Any
 import re
 
-from src.image_handler import load_image, resize_image, extract_text_with_ocr, get_dominant_colors
+from src.image_handler import load_image, resize_image, extract_text_with_ocr
 from src.llm_integration import analyze_with_llm
 
 
@@ -30,17 +30,22 @@ def _color_to_name(rgb):
     return "gray"
 
 
-def generate_name_and_keywords(image_path: str, verbose: bool = False) -> Dict[str, Any]:
-    p = Path(image_path)
-    img = load_image(image_path)
-    img = resize_image(img)
+def generate_name_and_keywords(
+        image_path: str, 
+        force_tesseract: bool = False,
+        verbose: bool = False, 
+        save_preprocessed_img: bool = False
+        ) -> Dict[str, Any]:
+    """Generate a suggested name and keywords for the given image.
+    Uses OCR and LLM analysis to extract title and keywords.
+    Falls back to heuristics if LLM analysis fails."""
 
-    ocr_text = extract_text_with_ocr(img, verbose=verbose)
-    colors = get_dominant_colors(img, num_colors=3, verbose=verbose)
-    color_names = [_color_to_name(c) for c in colors]
+    p = Path(image_path)
+
+    ocr_text = extract_text_with_ocr(image_path, force_tesseract=force_tesseract, verbose=verbose, save_preprocessed_img=save_preprocessed_img)
 
     # try LLM first
-    llm = analyze_with_llm(image_path, ocr_text, color_names, verbose=verbose)
+    llm = analyze_with_llm(image_path, ocr_text, verbose=verbose)
     if llm and isinstance(llm, dict) and llm.get("title"):
         return {"title": llm.get("title"), "keywords": llm.get("keywords", []), "filename": p.name}
 
@@ -64,8 +69,6 @@ def generate_name_and_keywords(image_path: str, verbose: bool = False) -> Dict[s
     for tok in re.split(r"\W+", title_base):
         if len(tok) > 2:
             keywords.add(tok.lower())
-    for c in color_names:
-        keywords.add(c)
     keywords.add(p.suffix.replace('.', ''))
 
     keywords_str = ", ".join(sorted(keywords))
