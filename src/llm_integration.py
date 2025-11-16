@@ -27,6 +27,9 @@ def analyze_with_llm(image_path: str, ocr_text: str, verbose: bool = False) -> O
         "You must reply with valid JSON only. Do not include any explanatory text.\n"
         "Return a JSON object with this structure:\n"
         "{\n  \"title\": \"concise title here\",\n  \"keywords\": [\"keyword1\", \"keyword2\", ...]\n}\n"
+        "The title should be concise (max 8 words), descriptive of the main subject of the image.\n"
+        "Generally the best title can be found in the first few lines of the OCR text.\n"
+        "If the first sentence is a good summary, make it better by shortening or rephrasing it, and use that as the title.\n"
         "Identify the keywords relevant to the content that represent subjects of study, and select only the 5 most relevant keywords if possible."
     )
 

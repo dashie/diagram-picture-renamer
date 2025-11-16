@@ -113,7 +113,7 @@ def merge_text_boxes(results, y_tolerance=0.02, max_dist=0.05):
     # results = [(text, box), ...]
     rows = []
 
-    for text, box in sorted(results, key=lambda x: x[1][0]):  # sort by x coordinate
+    for text, box in sorted(results, key=lambda x: x[1][0][0]):  # sort by x
         line_merged = False
         (bx, by), (bw, bh) = box
         
@@ -127,6 +127,9 @@ def merge_text_boxes(results, y_tolerance=0.02, max_dist=0.05):
         
         if not line_merged:
             rows.append([(text, box)])
+
+    # sort by y-coordinate, 0 is bottom
+    rows = sorted(rows, key=lambda x: x[0][1][0][1], reverse=True)
 
     # merge texts in each row
     return [" ".join([t for t, _ in row]) for row in rows]
