@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import Optional, Dict, Any
 
 try:
@@ -13,6 +14,7 @@ def analyze_with_llm(image_path: str, ocr_text: str, verbose: bool = False) -> O
 
     Returns dict {"title": str, "keywords": [str]} or None if not available.
     """
+
     api_key = os.environ.get("OPENAI_API_KEY")
     model = os.environ.get("OPENAI_MODEL")
     ollama_model = os.environ.get("OLLAMA_MODEL")
@@ -27,19 +29,19 @@ def analyze_with_llm(image_path: str, ocr_text: str, verbose: bool = False) -> O
         "You must reply with valid JSON only. Do not include any explanatory text.\n"
         "Return a JSON object with this structure:\n"
         "{\n  \"title\": \"concise title here\",\n  \"keywords\": [\"keyword1\", \"keyword2\", ...]\n}\n"
-        "The title should be concise (max 8 words), descriptive of the main subject of the image.\n"
         "Generally the best title can be found in the first few lines of the OCR text.\n"
-        "If the first sentence is a good summary, make it better by shortening or rephrasing it, and use that as the title.\n"
+        "The title should be concise (max 8 words), descriptive of the main subject of the image.\n"
+        "The title should contain only alphanumeric characters and spaces; do not include special characters or punctuation.\n"
+        "If the first sentence is a good candidate for the title, fix its grammar and use it.\n"
         "Identify the keywords relevant to the content that represent subjects of study, and select only the 5 most relevant keywords if possible."
     )
 
     prompt = (
-        "Return JSON object for these inputs:\n\n"
-        f"OCR_TEXT:\n{ocr_text}\n\n"
+        "Return JSON object for these OCR text:\n\n"
+        f"{ocr_text}\n\n"
     )
 
     if verbose:
-        import sys
         print(f"[VERBOSE] LLM system_prompt:\n{system_prompt}", file=sys.stderr)
         print(f"[VERBOSE] LLM user_prompt:\n{prompt}", file=sys.stderr)
 
@@ -47,7 +49,6 @@ def analyze_with_llm(image_path: str, ocr_text: str, verbose: bool = False) -> O
     if ollama_model and _HAS_OPENAI:
         try:
             if verbose:
-                import sys
                 print(f"[VERBOSE] Using Ollama service at {ollama_host} with model {ollama_model}", file=sys.stderr)
             
             # Point the OpenAI client at the Ollama host (OpenAI-compatible)
@@ -64,7 +65,7 @@ def analyze_with_llm(image_path: str, ocr_text: str, verbose: bool = False) -> O
             resp = client.chat.completions.create(
                 model=ollama_model,
                 messages=messages,
-                max_tokens=300,
+                max_tokens=500,
                 temperature=0.0,
                 stream=False,
                 # pass format parameter to Ollama-compatible endpoint to request JSON
@@ -79,28 +80,35 @@ def analyze_with_llm(image_path: str, ocr_text: str, verbose: bool = False) -> O
                 # fallback if different shape (some clients use .text)
                 try:
                     content = resp.choices[0].text
-                except Exception:
+                except Exception as e:
+                    if verbose:
+                        print(f"[VERBOSE] Failed to extract content from Ollama response: {e}", file=sys.stderr)
                     content = None
+
+            if not content or content.strip() == "":
+                if verbose:
+                    print(f"[VERBOSE] Ollama response content is empty", file=sys.stderr)
+                return None
+
+            if verbose:
+                print(f"[VERBOSE] LLM JSON result: {content}", file=sys.stderr)
 
             if content:
                 import json
                 try:
                     result = json.loads(content)
-                    if verbose:
-                        import sys
-                        print(f"[VERBOSE] LLM JSON result: {json.dumps(result, ensure_ascii=False)}", file=sys.stderr)
                     return result
                 except Exception:
                     return None
         except Exception as e:
             # If Ollama via openai client fails, fall back to OpenAI path below
+            print(f"[VERBOSE] ollama via openai client failed: {e}", file=sys.stderr)
             pass
 
     # Fall back to OpenAI if available
     try:
         if api_key and model and _HAS_OPENAI:
             if verbose:
-                import sys
                 print(f"[VERBOSE] Using OpenAI service with model {model}", file=sys.stderr)
             
             openai.api_key = api_key
@@ -115,7 +123,6 @@ def analyze_with_llm(image_path: str, ocr_text: str, verbose: bool = False) -> O
             try:
                 result = json.loads(content)
                 if verbose:
-                    import sys
                     print(f"[VERBOSE] LLM JSON result: {json.dumps(result, ensure_ascii=False)}", file=sys.stderr)
                 return result
             except Exception:

@@ -1,33 +1,11 @@
+import re
+import sys
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any
-import re
 
 from src.image_handler import load_image, resize_image, extract_text_with_ocr
 from src.llm_integration import analyze_with_llm
-
-
-def _slugify(text: str) -> str:
-    text = text.strip()
-    text = re.sub(r"[^0-9A-Za-z_-]+", " ", text)
-    text = re.sub(r"  +", " ", text)
-    return text.strip()
-
-
-def _color_to_name(rgb):
-    # naive mapping by brightness/hue groups
-    r, g, b = rgb
-    if r > 200 and g > 200 and b > 200:
-        return "white"
-    if r < 50 and g < 50 and b < 50:
-        return "black"
-    if r > g and r > b:
-        return "red"
-    if g > r and g > b:
-        return "green"
-    if b > r and b > g:
-        return "blue"
-    return "gray"
 
 
 def generate_name_and_keywords(
@@ -50,6 +28,9 @@ def generate_name_and_keywords(
         return {"title": llm.get("title"), "keywords": llm.get("keywords", []), "filename": p.name}
 
     # fallback heuristics
+    if verbose:
+        print(f"[VERBOSE] LLM analysis failed or returned no title, falling back to heuristics", file=sys.stderr)
+
     title_base = None
     if ocr_text and ocr_text.strip():
         # take first long line
@@ -64,7 +45,7 @@ def generate_name_and_keywords(
     timestamp = datetime.now().strftime("%Y%m%d")
     title = f"{title_base} {timestamp}"
 
-    # keywords: tokens from OCR and color names and filename tokens
+    # keywords: tokens from OCR and filename tokens
     keywords = set()
     for tok in re.split(r"\W+", title_base):
         if len(tok) > 2:
@@ -75,6 +56,13 @@ def generate_name_and_keywords(
     # Inserisci le keyword nel nome del file, separandole con virgola e spazio
     filename_with_keywords = f"{title_base} [{keywords_str}] {timestamp}{p.suffix}"
     return {"title": title, "keywords": keywords_str, "filename": filename_with_keywords}
+
+
+def _slugify(text: str) -> str:
+    text = text.strip()
+    text = re.sub(r"[^0-9A-Za-z_-]+", " ", text)
+    text = re.sub(r"  +", " ", text)
+    return text.strip()
 
 
 def build_final_filename(suggested_title: str, keywords: list, original_suffix: str) -> str:
@@ -103,7 +91,7 @@ def build_final_filename(suggested_title: str, keywords: list, original_suffix: 
             continue
         seen.add(s)
         kw_list.append(s)
-        if len(kw_list) >= 5:
+        if len(kw_list) >= 3:
             break
 
     keywords_part = ", ".join(kw_list) if kw_list else ""

@@ -191,8 +191,14 @@ def extract_text_with_ocr(
         cleaned_line = re.sub(r'\s+', ' ', cleaned_line)
         # Only add non-empty lines
         if cleaned_line and len(cleaned_line) > 1:
-            cleaned_lines.append(f"- {cleaned_line}")
+            cleaned_lines.append(f"{cleaned_line}")
     clean_ocr_text = "\n".join(cleaned_lines) if cleaned_lines else "No text detected"
+
+    clean_ocr_text = clean_ocr_text.strip()
+    clean_ocr_text = re.sub(r'\n+', '\n', clean_ocr_text)
+    clean_ocr_text = re.sub(r'[ \t]+', ' ', clean_ocr_text) # collapse multiple spaces
+    clean_ocr_text = re.sub(r'[\u200b-\u200d\uFEFF]', '', clean_ocr_text) # remove zero-width chars
+
     if verbose:
         print(f"[VERBOSE] OCR text extracted:\n{ocr_text}", file=sys.stderr)
         print(f"[VERBOSE] OCR text cleaned:\n{clean_ocr_text}", file=sys.stderr)
